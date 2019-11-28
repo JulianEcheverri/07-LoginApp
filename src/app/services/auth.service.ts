@@ -28,7 +28,9 @@ export class AuthService {
     this.obtenerToken();
   }
 
-  logOut() {}
+  logOut() {
+    localStorage.removeItem("token");
+  }
 
   logIn(usuario: UsuarioModel) {
     // hacemos lo mismo por que necesitamos obtener el usuario
@@ -38,11 +40,11 @@ export class AuthService {
     };
     // usamos la api de verificacion de usuario
     return this.http
-    .post(`${this.url}signInWithPassword?key=${this.apiKey}`,authData)
+      .post(`${this.url}signInWithPassword?key=${this.apiKey}`, authData)
       .pipe(
         map(respuestaMap => {
-          console.log('entro en el map login');
-          this.guardarToken(respuestaMap['idToken']);
+          console.log("entro en el map login");
+          this.guardarToken(respuestaMap["idToken"]);
           // debo devolver el map
           return respuestaMap;
         })
@@ -75,29 +77,43 @@ export class AuthService {
     // para el error se usa cathError perteneciente a los rxjs operators
     // el map es un filtro de toda la informacion y solo pasar la buena
     return this.http
-    .post(`${this.url}signUp?key=${this.apiKey}`, authData)
+      .post(`${this.url}signUp?key=${this.apiKey}`, authData)
       .pipe(
-          map(respuestaMap => {
-            console.log('entro en el map');
-            this.guardarToken(respuestaMap['idToken']);
-            // debo devolver el map
-            return respuestaMap;
-          })
-        );
+        map(respuestaMap => {
+          console.log("entro en el map");
+          this.guardarToken(respuestaMap["idToken"]);
+          // debo devolver el map
+          return respuestaMap;
+        })
+      );
   }
 
   private guardarToken(idToken: string) {
     this.userToken = idToken;
-    localStorage.setItem('token', idToken);
+    localStorage.setItem("token", idToken);
+
+    let hoy = new Date();
+    hoy.setSeconds(3600);
+    //guardamos en el local storage cuando expira el token, sumando 3600 seg, una hora
+    localStorage.setItem("expira", hoy.getTime().toString());
   }
 
-  obtenerToken(){
-    if (localStorage.getItem('token')) {
-      this.userToken = localStorage.getItem('token');
-    }
-    else{
-      this.userToken = '';
+  obtenerToken() {
+    if (localStorage.getItem("token")) {
+      this.userToken = localStorage.getItem("token");
+    } else {
+      this.userToken = "";
     }
     return this.userToken;
+  }
+
+  estaAutenticado(): boolean {
+    if (this.userToken.length > 2) return false;
+    // obtenermos la hora de expiracion
+    const expiracion = Number(localStorage.getItem("expira"));
+    const fechaDeExpiracion = new Date();
+    fechaDeExpiracion.setTime(expiracion);
+
+    return fechaDeExpiracion > new Date();
   }
 }
